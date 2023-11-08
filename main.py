@@ -91,7 +91,7 @@ def get_data_from_database(database_host, database_user, database_password, data
         cursor = conn.cursor()
 
         # Example SQL query to select data from a table
-        cursor.execute(f'SELECT profitCameraIp, profitCameraPort, username, password FROM {table_name} where analyticId = 7')
+        cursor.execute(f'SELECT profitCameraIp, profitCameraPort, username, password FROM {table_name} where cameraType LIKE "A%" AND (analyticId=7 or analyticId like "%H%")')
 
         if not cursor:
             logging.error("Failed to execute SQL query.")
@@ -130,7 +130,8 @@ def main():
     args = parse_arguments()
 
     # Create a directory for logs if it doesn't exist
-    log_dir = os.path.join(args.savefolder, "logs")
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    log_dir = os.path.join(args.savefolder, current_date, "logs")
     os.makedirs(log_dir, exist_ok=True)
 
     # Set up logging to a file
