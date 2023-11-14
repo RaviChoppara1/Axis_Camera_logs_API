@@ -91,7 +91,7 @@ def get_data_from_database(database_host, database_user, database_password, data
         cursor = conn.cursor()
 
         # Example SQL query to select data from a table
-        cursor.execute(f'SELECT profitCameraIp, profitCameraPort, username, password FROM {table_name} where cameraType LIKE "A%" AND (analyticId=7 or analyticId like "%H%")')
+        cursor.execute(f'SELECT profitCameraIp, profitCameraPort, username, password FROM {table_name} where cameraType = "Axis" AND (analyticId="7" or analyticId ="11" or analyticId="12")')
 
         if not cursor:
             logging.error("Failed to execute SQL query.")
@@ -140,7 +140,7 @@ def main():
 
     rows = get_data_from_database(args.database_host, args.database_user, args.database_password, args.database_name, args.table_name)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         future_to_row = {executor.submit(cam_logs, *row, args.savefolder): row for row in rows}
         for future in concurrent.futures.as_completed(future_to_row):
             row = future_to_row[future]
