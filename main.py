@@ -105,7 +105,7 @@ def get_data_from_database( database_user, database_password, database_name, tab
         cursor = conn.cursor()
 
         # Example SQL query to select data from a table
-        cursor.execute(f'SELECT profitCameraIp, profitCameraPort, username, password FROM {table_name} where cameraType="Axis" and (analyticId="7" or analyticId="11" or analyticId= "12")')
+        cursor.execute(f'SELECT profitCameraIp, profitCameraPort, username, password FROM {table_name} where cameraType="Axis" and (analyticId="7" or analyticId="11" or analyticId= "12" or analyticId="11H" or analyticId= "12H")')
 
         if not cursor:
             logging.error("Failed to execute SQL query.")
