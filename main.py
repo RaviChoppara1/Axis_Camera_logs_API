@@ -30,10 +30,13 @@ def cam_logs(profitCameraIP, profitCameraPort, username, password, s3_bucket):
 
     # Create a filename based on the current time
     current_time = datetime.now().strftime("%H-%M-%S")
-    filename = f"{current_date}/{subfolder}/systemlog_{current_time}.txt"
+    filename = f"test/{current_date}/{subfolder}/systemlog_{current_time}.txt"
 
-    # Calculate the retention date (30 days from the current date)
+    # Calculate the rls
+    # etention date (30 days from the current date)
     retention_date = datetime.now() - timedelta(days=30)
+
+
 
     # Make the HTTP request with digest authentication
     try:
@@ -48,10 +51,13 @@ def cam_logs(profitCameraIP, profitCameraPort, username, password, s3_bucket):
 
             s3_upload_object(s3_bucket, filename, response.content)
             logging.info(f"Data saved to s3://{s3_bucket}/{filename}")
+
         else:
             logging.error(f"Request failed with status code: {response.status_code}")
+
     except requests.exceptions.RequestException as e:
         logging.error(f"Request error: {str(e)}")
+
 
 def s3_upload_object(bucket, key, data):
     try:
@@ -67,6 +73,15 @@ def s3_upload_object(bucket, key, data):
     except NoCredentialsError:
         logging.error("Credentials not available for S3 upload.")
         print("S3 upload failed: Credentials not available")
+
+def s3_delete_object(bucket, key):
+    try:
+        s3 = boto3.client('s3')
+        s3.delete_object(Bucket=bucket, Key=key)
+        print(f"Deleted from S3: s3://{bucket}/{key}")
+    except NoCredentialsError:
+        logging.error("Credentials not available for S3 delete.")
+        print("S3 delete failed: Credentials not available")
 def s3_object_exists(bucket, key):
     try:
         s3 = boto3.client('s3')
@@ -153,15 +168,22 @@ def main():
 
     rows = get_data_from_database(args.database_user, args.database_password, args.database_name,
                                   args.table_name)
+    # Upload log file to S3
+    log_s3_key = os.path.join(current_date, "Docker logs", "Docker_log.log")
+    s3_upload_object(args.s3_bucket, log_s3_key, open(log_filename, 'rb').read())
 
+    logging.info(f"Log file uploaded to s3://{args.s3_bucket}/{log_s3_key}")
+    
+
+    # Use ThreadPoolExecutor for concurrent execution
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-        future_to_row = {executor.submit(cam_logs, *row, args.s3_bucket): row for row in rows}
-        for future in concurrent.futures.as_completed(future_to_row):
-            row = future_to_row[future]
-            try:
-                future.result()
-            except Exception as exc:
-                logging.error(f"Error for row {row}: {exc}")
+        futures = []
+        for row in rows:
+            future = executor.submit(cam_logs, *row, args.s3_bucket)
+            futures.append(future)
+
+        # Wait for all futures to complete
+        concurrent.futures.wait(futures)
 
 if __name__ == "__main__":
     main()
